@@ -152,10 +152,12 @@ class Arma3_PointsCloud:
                         self.point_cloud.points = o3d.utility.Vector3dVector(points)
                         self.point_cloud.colors = o3d.utility.Vector3dVector(colors)
                         if self.received_cnt == points.shape[0]:
-                            self.pcl_pub_socket.send_string(str([0, 0]))
+                            o3d.io.write_point_cloud(
+                                f"{time.time()}.ply", self.point_cloud
+                            )
                             self.is_finnished = True
+                            self.pcl_pub_socket.send_string(str([0, 0]))
                             print("Rec:%d" % (points.shape[0]))
-                            o3d.io.write_point_cloud(f"{time.time()}.ply", self.point_cloud)
                             # self.point_cloud = generate_random_point_cloud()
             except zmq.Again:
                 time.sleep(0.01)
@@ -177,13 +179,15 @@ class Arma3_PointsCloud:
                         )
             except zmq.Again:
                 pass
-    
+
+
 def generate_random_point_cloud(num_points=1000):
     """生成随机点云"""
     points = np.random.rand(num_points, 3)  # 在 [0, 1) 范围内生成随机点
     point_cloud = o3d.geometry.PointCloud()
     point_cloud.points = o3d.utility.Vector3dVector(points)
     return point_cloud
+
 
 if __name__ == "__main__":
     points_cloud_store_path = r"./PointsCloud"
@@ -251,7 +255,7 @@ if __name__ == "__main__":
             with pcl.data_lock:
                 if pcl.is_finnished:
                     pcl.is_finnished = False
-            # new_pcd = generate_random_point_cloud()
+                    # new_pcd = generate_random_point_cloud()
                     initial_pcd.points = pcl.point_cloud.points
             vis.update_geometry(initial_pcd)
             vis.poll_events()
