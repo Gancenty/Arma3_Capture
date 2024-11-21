@@ -32,6 +32,7 @@ class Arma3_PointsCloud:
         self.object_file_path = object_file_path
         self.color_dict = None
         self.object_list = None
+        self.back_up_pcl = None
 
         self.load_object_list()
         self.load_color_dict()
@@ -152,9 +153,10 @@ class Arma3_PointsCloud:
                         self.point_cloud.points = o3d.utility.Vector3dVector(points)
                         self.point_cloud.colors = o3d.utility.Vector3dVector(colors)
                         if self.received_cnt == points.shape[0]:
-                            o3d.io.write_point_cloud(
-                                f"{time.time()}.ply", self.point_cloud
-                            )
+                            # o3d.io.write_point_cloud(
+                            #     f"{time.time()}.ply", self.point_cloud
+                            # )
+                            self.back_up_pcl = self.point_cloud
                             self.is_finnished = True
                             self.pcl_pub_socket.send_string(str([0, 0]))
                             print("Rec:%d" % (points.shape[0]))
@@ -200,8 +202,8 @@ if __name__ == "__main__":
         object_file_path=object_file_path,
     )
 
-    while True:
-        time.sleep(5)
+    # while True:
+    #     time.sleep(5)
     # 创建 VisPy 可视化窗口
     # canvas = scene.SceneCanvas(
     #     keys="interactive", show=True, title="Point Cloud Viewer"
@@ -238,29 +240,25 @@ if __name__ == "__main__":
     # # 运行应用
     # app.run()
 
-    while pcl.is_finnished == False:
-        time.sleep(0.001)
-
     vis = o3d.visualization.Visualizer()
     vis.create_window(window_name="Real-Time Point Cloud Viewer", width=800, height=600)
-    points = np.array([[0.0, 0.0, 0.0]], dtype=np.float32)
-    vis_pcd = o3d.geometry.PointCloud()
-    vis_pcd.points = o3d.utility.Vector3dVector(points)
 
     initial_pcd = generate_random_point_cloud()
     vis.add_geometry(initial_pcd)
-
+    first_rec = True
     try:
         while True:
             with pcl.data_lock:
                 if pcl.is_finnished:
-                    pcl.is_finnished = False
                     # new_pcd = generate_random_point_cloud()
-                    initial_pcd.points = pcl.point_cloud.points
+                    initial_pcd.points = pcl.back_up_pcl.points
+                    pcl.is_finnished = False
+                    if first_rec:
+                        first_rec = False
             vis.update_geometry(initial_pcd)
             vis.poll_events()
+            vis.reset_view_point(reset_bounding_box=True)
             vis.update_renderer()
-            vis.reset_view_point()
             time.sleep(0.01)
     except KeyboardInterrupt:
         vis.destroy_window()

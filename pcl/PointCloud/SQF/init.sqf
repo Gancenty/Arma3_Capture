@@ -8,9 +8,9 @@ next_class_num = 0;
 fuc_laser_scan = {
 	params ["_center"];
 	private _cameraPos = _center; 		  // 摄像机位置 
-	private _horizontalFOV = 60;         // 水平视角（度）   
+	private _horizontalFOV = 360;         // 水平视角（度）   
 	private _verticalFOV = 60;            // 垂直视角（度）   
-	private _angleResolution = 0.5;       // 角分辨率（度）   
+	private _angleResolution = 1;       // 角分辨率（度）   
 	private _maxDistance = 100;          
 	private _points_cnt = 0; 
 	private _intersections = [];
@@ -35,7 +35,7 @@ fuc_laser_scan = {
 			_min_point_class_str = "";
 			_min_distance = 999999;
 			
-			private _result_fire = lineIntersectsSurfaces [_cameraPos, _endPos, player, objNull, true, 1, "VIEW", "FIRE"];
+			private _result_fire = lineIntersectsSurfaces [_cameraPos, _endPos, player, uav1, true, 1, "VIEW", "FIRE"];
 			if (count _result_fire > 0) then {
 				private _intersectionPos = (_result_fire select 0) select 0;   
 				private _intersectionClass = (_result_fire select 0) select 2;
@@ -51,7 +51,7 @@ fuc_laser_scan = {
 			}; 
 			
 
-			// private _result_geom = lineIntersectsSurfaces [_cameraPos, _endPos, player, objNull, true, 1, "GEOM", "NONE"];   
+			// private _result_geom = lineIntersectsSurfaces [_cameraPos, _endPos, player, uav1, true, 1, "GEOM", "NONE"];   
 			// if (count _result_geom > 0) then {
 			// 	private _intersectionPos = (_result_geom select 0) select 0;   
 			// 	private _intersectionClass = (_result_geom select 0) select 2;
@@ -90,7 +90,7 @@ fuc_laser_scan = {
 
 	_message = ["pcl.read_message", []] call py3_fnc_callExtension;
 	while {_message select 0 == "N"} do {
-		sleep(0.001);
+		// sleep(0.001);
 		_message = ["pcl.read_message", []] call py3_fnc_callExtension;
 	};
 
@@ -98,11 +98,11 @@ fuc_laser_scan = {
 	_points_cnt
 };
 
-while {true} do {
+onEachFrame{
+
 	_target_pos = getPosASL uav1;
 	_start_time = diag_tickTime;
 	_cnt = [_target_pos] call fuc_laser_scan;
 	_end_time = diag_tickTime;
 	hintSilent str (str (_end_time - _start_time));
-	sleep(0.001);
 };
